@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import case, select
 from sqlalchemy.dialects.postgresql import insert
@@ -19,6 +19,22 @@ def get_active_discoveries(
     )
 
     return list(session.scalars(statement))
+
+
+def dismiss_discovery(
+    session: Session,
+    discovery_id: int,
+) -> Discovery | None:
+    discovery = session.get(Discovery, discovery_id)
+
+    if discovery is None:
+        return None
+
+    if discovery.dismissed_at is None:
+        discovery.dismissed_at = datetime.now(timezone.utc)
+        session.commit()
+
+    return discovery
 
 
 def upsert_discovery(

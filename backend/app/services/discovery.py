@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database.models import Discovery
 from app.database.repository import (
+    dismiss_discovery,
     get_active_discoveries,
     upsert_discovery,
 )
@@ -16,6 +17,13 @@ def get_recent_discoveries(
         session,
         limit=50,
     )
+
+
+def dismiss_token(
+    session: Session,
+    discovery_id: int,
+) -> Discovery | None:
+    return dismiss_discovery(session, discovery_id)
 
 
 def record_discovery(

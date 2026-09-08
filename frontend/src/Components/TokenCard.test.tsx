@@ -31,8 +31,10 @@ describe("TokenCard", () => {
     expect(screen.getByTitle(token.tokenAddress)).toHaveTextContent(
       "1234567...tuvwxyz",
     );
-    expect(screen.getByText("DexScreener")).toBeInTheDocument();
-    expect(screen.getAllByText("watching")).toHaveLength(2);
+    expect(screen.getByText("pumpswap")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Mark Example Token as watching" }))
+      .toHaveTextContent("new");
+    expect(screen.getByText("5m")).toBeInTheDocument();
   });
 
   it("uses the first symbol letter as the token emblem", () => {
@@ -102,5 +104,61 @@ describe("TokenCard", () => {
 
     expect(document.querySelector(".token-icon")).toHaveTextContent("E");
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("cycles the badge from new to watching to seen", () => {
+    render(<TokenCard token={token} />);
+
+    const badge = screen.getByRole("button", {
+      name: "Mark Example Token as watching",
+    });
+
+    fireEvent.click(badge);
+    expect(badge).toHaveTextContent("watching");
+    expect(badge).toHaveClass("token-status-button--watching");
+
+    fireEvent.click(badge);
+    expect(badge).toHaveTextContent("seen");
+    expect(badge).not.toHaveClass("token-status-button--watching");
+  });
+
+  it("shows the positive five-minute price change in green", () => {
+    render(
+      <TokenCard
+        token={{
+          ...token,
+          pairs: [
+            {
+              pairAddress: "pair-123",
+              priceChange: { m5: 12.345 },
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("+12.35%")).toHaveClass(
+      "token-price-change--positive",
+    );
+  });
+
+  it("shows the negative five-minute price change in red", () => {
+    render(
+      <TokenCard
+        token={{
+          ...token,
+          pairs: [
+            {
+              pairAddress: "pair-123",
+              priceChange: { m5: -4.5 },
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("-4.50%")).toHaveClass(
+      "token-price-change--negative",
+    );
   });
 });

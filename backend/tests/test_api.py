@@ -77,3 +77,43 @@ def test_get_discoveries_returns_camel_case_api_contract(monkeypatch):
             ],
         }
     ]
+
+
+def test_dismiss_discovery_returns_no_content(monkeypatch):
+    monkeypatch.setattr(
+        discoveries_api,
+        "dismiss_token",
+        lambda session, discovery_id: object()
+        if discovery_id == 1
+        else None,
+    )
+    app.dependency_overrides[get_db] = lambda: object()
+
+    try:
+        response = TestClient(app).post(
+            "/api/discoveries/1/dismiss"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 204
+    assert response.content == b""
+
+
+def test_dismiss_discovery_returns_not_found_for_unknown_id(monkeypatch):
+    monkeypatch.setattr(
+        discoveries_api,
+        "dismiss_token",
+        lambda session, discovery_id: None,
+    )
+    app.dependency_overrides[get_db] = lambda: object()
+
+    try:
+        response = TestClient(app).post(
+            "/api/discoveries/999/dismiss"
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Discovery not found"}

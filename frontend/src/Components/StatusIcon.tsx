@@ -76,7 +76,6 @@ export function SystemStatusIcon({
       >
         <span className="system-status__glow" />
         <span className="system-status__ring" />
-        <span className="system-status__core" />
 
         <span
           className="system-status__indicator system-status__indicator--discovery"

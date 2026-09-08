@@ -18,3 +18,21 @@ export async function fetchDiscoveries(
 
   return response.json();
 }
+
+
+export async function dismissDiscovery(
+  discoveryId: number,
+): Promise<void> {
+  const response = await fetch(
+    `${DISCOVERIES_URL}/${discoveryId}/dismiss`,
+    {
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Dismiss request failed with status ${response.status}`,
+    );
+  }
+}

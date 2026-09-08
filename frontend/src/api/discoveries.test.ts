@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fetchDiscoveries } from "./discoveries";
+import { dismissDiscovery, fetchDiscoveries } from "./discoveries";
 
 const token = {
   id: 1,
@@ -50,6 +50,33 @@ describe("fetchDiscoveries", () => {
 
     await expect(fetchDiscoveries()).rejects.toThrow(
       "Discovery request failed with status 503",
+    );
+  });
+
+  it("dismisses a discovery", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(dismissDiscovery(42)).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/api/discoveries/42/dismiss",
+      { method: "POST" },
+    );
+  });
+
+  it("throws when dismissing a discovery fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+      }),
+    );
+
+    await expect(dismissDiscovery(42)).rejects.toThrow(
+      "Dismiss request failed with status 404",
     );
   });
 });

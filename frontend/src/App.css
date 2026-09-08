@@ -130,6 +130,106 @@
   max-width: 20rem;
 }
 
+.face-gate {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+
+  background:
+    radial-gradient(circle at 50% 35%, rgb(122 162 255 / 22%), transparent 36rem),
+    linear-gradient(145deg, #101725 0%, #191b27 48%, #111317 100%);
+  backdrop-filter: blur(14px);
+
+  opacity: 1;
+  transition:
+    opacity 520ms ease,
+    visibility 0s linear 0s;
+}
+
+.face-gate--leaving {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 520ms ease,
+    visibility 0s linear 520ms;
+}
+
+.face-gate-panel {
+  display: flex;
+  width: min(100%, 28rem);
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2.5rem 2rem;
+
+  background: rgb(26 30 35 / 82%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 1.25rem;
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 35%);
+  text-align: center;
+}
+
+.face-gate-logo {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: contain;
+
+  filter: brightness(0) invert(1);
+}
+
+.face-gate-kicker {
+  color: var(--app-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.face-gate-disclaimer {
+  max-width: 22rem;
+  margin: 0;
+
+  color: var(--bs-body-color);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.face-gate-enter {
+  min-width: 12rem;
+  padding: 0.75rem 1.25rem;
+
+  background: var(--app-accent);
+  border: 1px solid var(--app-accent);
+  border-radius: 999px;
+  color: #101318;
+
+  font-weight: 700;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+.face-gate-enter:hover:not(:disabled) {
+  background: #9ab7ff;
+  border-color: #9ab7ff;
+  transform: translateY(-1px);
+}
+
+.face-gate-enter:focus-visible {
+  outline: 3px solid rgb(122 162 255 / 45%);
+  outline-offset: 3px;
+}
+
+.face-gate-enter:disabled {
+  cursor: wait;
+}
+
 .discovery-feed {
   padding: 1.25rem;
 
@@ -163,6 +263,42 @@
 
   font-size: 1.15rem;
   font-weight: 700;
+}
+
+.discovery-feed-refresh {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--app-text-muted);
+  font-size: 1.15rem;
+  line-height: 1;
+
+  animation: discovery-feed-refresh-cycle 900ms ease-out both;
+}
+
+@keyframes discovery-feed-refresh-cycle {
+  0% {
+    opacity: 0;
+    transform: rotate(-24deg) scale(0.85);
+  }
+
+  12% {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+
+  70% {
+    opacity: 1;
+    transform: rotate(360deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: rotate(360deg) scale(0.92);
+  }
 }
 
 .discovery-feed-content {
@@ -226,15 +362,52 @@
   );
 }
 
-.discovery-card {
+.discovery-card-slot {
   flex: 0 0 21rem;
-  width: auto;
+  width: 21rem;
+
+  overflow: hidden;
+
+  background-color: var(--app-surface-raised);
+  border-radius: 0.85rem;
+}
+
+.discovery-card {
+  width: 100%;
 
   padding: 1rem;
 
   background-color: var(--app-surface-raised);
   border: 1px solid var(--bs-border-color);
   border-radius: 0.85rem;
+
+  transition:
+    opacity 260ms ease,
+    transform 260ms ease;
+}
+
+.discovery-card--dismissing {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.94);
+}
+
+.discovery-card--entering {
+  animation: discovery-card-slide-in 420ms cubic-bezier(0.22, 1, 0.36, 1)
+    both;
+  animation-delay: 320ms;
+}
+
+@keyframes discovery-card-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-110%) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 
 .discovery-card-header {
@@ -252,6 +425,67 @@
   gap: 0.75rem;
 
   min-width: 0;
+}
+
+.token-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  flex-shrink: 0;
+}
+
+.token-status-button {
+  padding: 0.35em 0.65em;
+
+  border: 0;
+  cursor: pointer;
+}
+
+.token-status-button--watching {
+  animation: token-status-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes token-status-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.38;
+  }
+}
+
+.token-copy {
+  min-width: 0;
+}
+
+.token-dismiss-button {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  place-items: center;
+
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  color: var(--app-text-muted);
+
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.token-dismiss-button:hover:not(:disabled),
+.token-dismiss-button:focus-visible {
+  border-color: var(--bs-border-color);
+  color: var(--app-text);
+}
+
+.token-dismiss-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .token-icon {
@@ -293,6 +527,18 @@
   color: var(--app-text-muted);
 
   font-size: 0.8rem;
+}
+
+.token-price-change--positive {
+  color: var(--bs-success);
+}
+
+.token-price-change--negative {
+  color: var(--bs-danger);
+}
+
+.token-price-change--neutral {
+  color: var(--app-text-muted);
 }
 
 .token-address-row {
@@ -340,8 +586,9 @@
 }
 
 @media (max-width: 575px) {
-  .discovery-card {
+  .discovery-card-slot {
     flex-basis: 85%;
+    width: 85%;
   }
 
   .discovery-card-details {
@@ -478,8 +725,7 @@
 }
 
 .system-status__glow,
-.system-status__ring,
-.system-status__core {
+.system-status__ring {
   position: absolute;
   inset: 0;
   border-radius: 999px;
@@ -505,20 +751,6 @@
     transform 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
-}
-
-.system-status__core {
-  inset: 10px;
-  background:
-    radial-gradient(
-      circle at 35% 35%,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(255, 255, 255, 0.24) 22%,
-      rgba(25, 25, 25, 0.95) 72%
-    );
-  box-shadow:
-    inset 0 0 10px rgba(255, 255, 255, 0.2),
-    0 0 18px rgba(0, 0, 0, 0.35);
 }
 
 .system-status__trigger[data-group-status="healthy"] .system-status__glow {
@@ -720,4 +952,19 @@
 .system-status__service-detail {
   font-size: 0.75rem;
   opacity: 0.65;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discovery-feed-refresh {
+    animation: none;
+  }
+
+  .token-status-button--watching {
+    animation: none;
+  }
+
+  .discovery-card--dismissing,
+  .discovery-card--entering {
+    animation: none;
+  }
 }

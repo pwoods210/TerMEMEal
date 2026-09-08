@@ -7,7 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import Base
 from app.database.models import Discovery
-from app.database.repository import get_active_discoveries, upsert_discovery
+from app.database.repository import (
+    dismiss_discovery,
+    get_active_discoveries,
+    upsert_discovery,
+)
 
 
 @pytest.fixture
@@ -110,6 +114,22 @@ def test_upsert_never_downgrades_a_graduated_token(db_session):
     assert stored is not None
     assert stored.status == "graduated"
     assert stored.graduated_at is not None
+
+
+@pytest.mark.integration
+def test_dismiss_discovery_sets_timestamp_and_is_idempotent(db_session):
+    discovery = upsert_discovery(
+        db_session,
+        **discovery_values("abc"),
+    )
+
+    dismissed = dismiss_discovery(db_session, discovery.id)
+    dismissed_again = dismiss_discovery(db_session, discovery.id)
+
+    assert dismissed is not None
+    assert dismissed.dismissed_at is not None
+    assert dismissed_again is not None
+    assert dismissed_again.dismissed_at == dismissed.dismissed_at
 
 
 @pytest.mark.integration

@@ -1,16 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DiscoveredToken } from "../Common/types";
-import { fetchDiscoveries } from "../api/discoveries";
+import { dismissDiscovery, fetchDiscoveries } from "../api/discoveries";
 import DiscoveryFeed from "./DiscoveryFeed";
 
 vi.mock("../api/discoveries", () => ({
+  dismissDiscovery: vi.fn(),
   fetchDiscoveries: vi.fn(),
 }));
 
 const mockedFetchDiscoveries = vi.mocked(fetchDiscoveries);
+const mockedDismissDiscovery = vi.mocked(dismissDiscovery);
 
 const token: DiscoveredToken = {
   id: 1,
@@ -50,6 +52,7 @@ function renderFeed() {
 describe("DiscoveryFeed", () => {
   beforeEach(() => {
     mockedFetchDiscoveries.mockReset();
+    mockedDismissDiscovery.mockReset();
   });
 
   it("shows a loading state while discoveries are pending", () => {
@@ -85,5 +88,40 @@ describe("DiscoveryFeed", () => {
 
     expect(await screen.findByText("Example Token")).toBeInTheDocument();
     expect(screen.getByText("$EXAMPLE")).toBeInTheDocument();
+  });
+
+  it("dismisses a token and invalidates the discovery query", async () => {
+    mockedFetchDiscoveries
+      .mockResolvedValueOnce([token])
+      .mockResolvedValueOnce([
+        {
+          ...token,
+          id: 2,
+          name: "Older Token",
+        },
+      ]);
+    mockedDismissDiscovery.mockResolvedValue();
+
+    renderFeed();
+
+    await screen.findByText("Example Token");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Dismiss Example Token" }),
+    );
+
+    expect(
+      document.querySelector(".discovery-card--dismissing"),
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(mockedDismissDiscovery).toHaveBeenCalled();
+    });
+    expect(mockedDismissDiscovery.mock.calls[0][0]).toBe(1);
+    await waitFor(() => {
+      expect(screen.getByText("Older Token")).toBeInTheDocument();
+    });
+    expect(
+      document.querySelector(".discovery-card--entering"),
+    ).toBeInTheDocument();
   });
 });
