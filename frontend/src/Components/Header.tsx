@@ -6,7 +6,6 @@ import type { ServiceHealthMap } from "../Common/types";
 
 import appLogo from "../assets/turmemeal_icon.svg";
 
-
 function Header() {
   const {
     data: serviceHealth,
@@ -159,6 +158,5 @@ function Header() {
     </header>
   );
 }
-
 
 export default Header;

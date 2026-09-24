@@ -10,7 +10,6 @@ const CARD_REFLOW_DURATION_MS = 320;
 const REPLACEMENT_ANIMATION_DURATION_MS = 420;
 const DISCOVERY_SCROLL_POSITION_KEY = "termemeal.discovery-scroll-left";
 
-
 export default function DiscoveryFeed() {
   const feedRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
@@ -99,7 +98,6 @@ export default function DiscoveryFeed() {
     dismissMutation.mutate(tokenId);
   }
 
-
   function handleFeedScroll() {
     const feed = feedRef.current;
 
@@ -120,7 +118,6 @@ export default function DiscoveryFeed() {
       String(feed.scrollLeft),
     );
   }
-
 
   useEffect(() => {
     if (
@@ -343,7 +340,6 @@ export default function DiscoveryFeed() {
     };
   }, []);
 
-
   return (
     <section className="discovery-feed">
       <div className="discovery-feed-header">
@@ -376,13 +372,11 @@ export default function DiscoveryFeed() {
         </div>
       )}
 
-
       {isPending && (
         <div className="text-body-secondary">
           Loading discoveries...
         </div>
       )}
-
 
       {isError && (
         <div className="alert alert-danger mb-0">
@@ -392,13 +386,11 @@ export default function DiscoveryFeed() {
         </div>
       )}
 
-
       {!isPending && !isError && tokens.length === 0 && (
         <div className="text-body-secondary">
           Waiting for token discoveries...
         </div>
       )}
-
 
       {!isPending && !isError && tokens.length > 0 && (
         <>

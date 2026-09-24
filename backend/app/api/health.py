@@ -11,13 +11,13 @@ router = APIRouter(prefix="/health", tags=["health"])
 def get_health() -> bool:
     return True
 
+
 @router.post("/discovery/heartbeat")
 def discovery_heartbeat():
     record_discovery_heartbeat()
 
-    return {
-        "ok": True
-    }
+    return {"ok": True}
+
 
 def database_is_alive() -> bool:
     try:
@@ -27,6 +27,7 @@ def database_is_alive() -> bool:
     except Exception:
         return False
 
+
 @router.get("/services")
 def service_health():
     discovery_up = discovery_is_alive()
@@ -34,12 +35,12 @@ def service_health():
 
     return {
         "discovery": {
-            "status": "up" if discovery_up else "down"
+            "status": "up" if discovery_up else "down",
         },
         "trade": {
-            "status": "down"
+            "status": "down",
         },
         "database": {
-            "status": "up" if database_up else "down"
-        }
+            "status": "up" if database_up else "down",
+        },
     }

@@ -3,7 +3,6 @@ export type DiscoveryStatus =
   | "watching"
   | "graduated";
 
-
 export interface DiscoveredToken {
   id: number;
   name: string;
@@ -19,13 +18,11 @@ export interface DiscoveredToken {
   pairs: DexScreenerPair[];
 }
 
-
 export interface DexScreenerLink {
   type?: string;
   label?: string;
   url: string;
 }
-
 
 export interface DexScreenerTokenProfile {
   url?: string;
@@ -38,7 +35,6 @@ export interface DexScreenerTokenProfile {
   [key: string]: unknown;
 }
 
-
 export interface DexScreenerTokenReference {
   address?: string;
   name?: string;
@@ -46,13 +42,11 @@ export interface DexScreenerTokenReference {
   [key: string]: unknown;
 }
 
-
 export interface DexScreenerTransactions {
   buys?: number;
   sells?: number;
   [key: string]: unknown;
 }
-
 
 export interface DexScreenerLiquidity {
   usd?: number;
@@ -60,7 +54,6 @@ export interface DexScreenerLiquidity {
   quote?: number;
   [key: string]: unknown;
 }
-
 
 export interface DexScreenerPairInfo {
   imageUrl?: string;
@@ -72,7 +65,6 @@ export interface DexScreenerPairInfo {
   }>;
   [key: string]: unknown;
 }
-
 
 export interface DexScreenerPair {
   chainId?: string;
@@ -96,7 +88,6 @@ export interface DexScreenerPair {
   [key: string]: unknown;
 }
 
-
 export type ServiceStatus =
   | "up"
   | "down"
@@ -104,18 +95,15 @@ export type ServiceStatus =
   | "degraded"
   | "inactive";
 
-
 export type GroupStatus =
   | "healthy"
   | "degraded"
   | "critical"
   | "checking";
 
-
 export interface ServiceHealth {
   status: ServiceStatus;
 }
-
 
 export interface ServicesHealthResponse {
   discovery: ServiceHealth;
@@ -124,13 +112,11 @@ export interface ServicesHealthResponse {
   api: ServiceHealth;
 }
 
-
 export interface ServiceHealthItem {
   label: string;
   status: ServiceStatus;
   detail?: string;
 }
-
 
 export interface ServiceHealthMap {
   discovery: ServiceHealthItem;
