@@ -122,6 +122,35 @@ describe("TokenCard", () => {
     expect(badge).not.toHaveClass("token-status-button--watching");
   });
 
+  it("notifies the feed when the card enters and leaves watching", () => {
+    const onWatchingChange = vi.fn();
+
+    render(
+      <TokenCard
+        token={token}
+        onWatchingChange={onWatchingChange}
+      />,
+    );
+
+    const badge = screen.getByRole("button", {
+      name: "Mark Example Token as watching",
+    });
+
+    fireEvent.click(badge);
+    fireEvent.click(badge);
+
+    expect(onWatchingChange).toHaveBeenNthCalledWith(1, true);
+    expect(onWatchingChange).toHaveBeenNthCalledWith(2, false);
+  });
+
+  it("starts in watching state when the feed marks it as watched", () => {
+    render(<TokenCard token={token} isWatched />);
+
+    expect(
+      screen.getByRole("button", { name: "Mark Example Token as seen" }),
+    ).toHaveTextContent("watching");
+  });
+
   it("shows the positive five-minute price change in green", () => {
     render(
       <TokenCard

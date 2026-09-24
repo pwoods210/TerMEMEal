@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DiscoveredToken } from "../Common/types";
 import { dismissDiscovery, fetchDiscoveries } from "../api/discoveries";
-import DiscoveryFeed from "./DiscoveryFeed";
+import DiscoveryFeed, { mergeDiscoveryWindow } from "./DiscoveryFeed";
 
 vi.mock("../api/discoveries", () => ({
   dismissDiscovery: vi.fn(),
@@ -53,6 +53,41 @@ describe("DiscoveryFeed", () => {
   beforeEach(() => {
     mockedFetchDiscoveries.mockReset();
     mockedDismissDiscovery.mockReset();
+  });
+
+  it("keeps watched cards and evicts the oldest unwatched card", () => {
+    const nextTokens = [
+      { ...token, id: 4, discoveredAt: "2026-08-31T12:37:00Z" },
+      { ...token, id: 3, discoveredAt: "2026-08-31T12:36:00Z" },
+      { ...token, id: 2, discoveredAt: "2026-08-31T12:35:00Z" },
+    ];
+    const previousTokens = [
+      { ...token, id: 3, discoveredAt: "2026-08-31T12:36:00Z" },
+      { ...token, id: 2, discoveredAt: "2026-08-31T12:35:00Z" },
+      { ...token, id: 1, discoveredAt: "2026-08-31T12:34:00Z" },
+    ];
+
+    const result = mergeDiscoveryWindow(
+      nextTokens,
+      previousTokens,
+      new Set([1]),
+      new Set(),
+      3,
+    );
+
+    expect(result.map(({ id }) => id)).toEqual([4, 3, 1]);
+  });
+
+  it("does not preserve a watched card after it is dismissed", () => {
+    const result = mergeDiscoveryWindow(
+      [{ ...token, id: 2 }],
+      [{ ...token, id: 1 }],
+      new Set([1]),
+      new Set([1]),
+      2,
+    );
+
+    expect(result.map(({ id }) => id)).toEqual([2]);
   });
 
   it("shows a loading state while discoveries are pending", () => {

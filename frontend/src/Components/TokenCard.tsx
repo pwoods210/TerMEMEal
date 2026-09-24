@@ -7,6 +7,8 @@ import type {
 interface TokenCardProps {
   token: DiscoveredToken;
   onDismiss?: () => void;
+  onWatchingChange?: (isWatching: boolean) => void;
+  isWatched?: boolean;
   isDismissing?: boolean;
   isDismissDisabled?: boolean;
   isEntering?: boolean;
@@ -60,13 +62,17 @@ function formatPercentage(value: number | undefined) {
 function TokenCard({
   token,
   onDismiss,
+  onWatchingChange,
+  isWatched = false,
   isDismissing = false,
   isDismissDisabled = false,
   isEntering = false,
 }: TokenCardProps) {
   const imageUrl = getTokenImageUrl(token);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
-  const [badgeStatus, setBadgeStatus] = useState<CardBadgeStatus>("new");
+  const [badgeStatus, setBadgeStatus] = useState<CardBadgeStatus>(
+    isWatched ? "watching" : "new",
+  );
   const imageSrc = imageUrl && imageUrl !== failedImageUrl ? imageUrl : null;
   const dexName = token.exchange ?? token.source;
   const fiveMinuteChange = getFiveMinuteChange(token);
@@ -82,6 +88,13 @@ function TokenCard({
     hour: "numeric",
     minute: "2-digit",
   });
+
+  function handleBadgeClick() {
+    const nextStatus = nextBadgeStatus[badgeStatus];
+
+    setBadgeStatus(nextStatus);
+    onWatchingChange?.(nextStatus === "watching");
+  }
 
   return (
     <article
@@ -118,7 +131,7 @@ function TokenCard({
               nextBadgeStatus[badgeStatus]
             }`}
             title={`Mark as ${nextBadgeStatus[badgeStatus]}`}
-            onClick={() => setBadgeStatus(nextBadgeStatus[badgeStatus])}
+            onClick={handleBadgeClick}
           >
             {badgeStatus}
           </button>

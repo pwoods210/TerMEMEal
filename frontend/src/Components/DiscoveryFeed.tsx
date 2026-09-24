@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { dismissDiscovery, fetchDiscoveries } from "../api/discoveries";
+import type { DiscoveredToken } from "../Common/types";
 import DiscoveryScrollControl from "./DiscoveryScroll";
 import TokenCard from "./TokenCard";
 
@@ -9,6 +10,57 @@ const DISMISS_ANIMATION_DURATION_MS = 260;
 const CARD_REFLOW_DURATION_MS = 320;
 const REPLACEMENT_ANIMATION_DURATION_MS = 420;
 const DISCOVERY_SCROLL_POSITION_KEY = "termemeal.discovery-scroll-left";
+const DISCOVERY_WINDOW_SIZE = 50;
+const EMPTY_DISCOVERIES: DiscoveredToken[] = [];
+
+// Keep locally watched cards in the client-side window when the API's
+// newest-record limit would otherwise evict them.
+export function mergeDiscoveryWindow(
+  nextTokens: DiscoveredToken[],
+  previousTokens: DiscoveredToken[],
+  watchedTokenIds: ReadonlySet<number>,
+  dismissedTokenIds: ReadonlySet<number> = new Set<number>(),
+  limit = DISCOVERY_WINDOW_SIZE,
+): DiscoveredToken[] {
+  const tokensById = new Map<number, DiscoveredToken>();
+
+  for (const token of nextTokens) {
+    if (!dismissedTokenIds.has(token.id)) {
+      tokensById.set(token.id, token);
+    }
+  }
+
+  for (const token of previousTokens) {
+    if (
+      watchedTokenIds.has(token.id) &&
+      !dismissedTokenIds.has(token.id) &&
+      !tokensById.has(token.id)
+    ) {
+      tokensById.set(token.id, token);
+    }
+  }
+
+  const mergedTokens = [...tokensById.values()].sort((left, right) => {
+    const discoveredAtDifference =
+      Date.parse(right.discoveredAt) - Date.parse(left.discoveredAt);
+
+    return discoveredAtDifference || right.id - left.id;
+  });
+  const excessTokenCount = mergedTokens.length - limit;
+
+  if (excessTokenCount <= 0) {
+    return mergedTokens;
+  }
+
+  const removableTokenIds = new Set(
+    mergedTokens
+      .filter((token) => !watchedTokenIds.has(token.id))
+      .slice(-excessTokenCount)
+      .map((token) => token.id),
+  );
+
+  return mergedTokens.filter((token) => !removableTokenIds.has(token.id));
+}
 
 export default function DiscoveryFeed() {
   const feedRef = useRef<HTMLDivElement>(null);
@@ -16,6 +68,15 @@ export default function DiscoveryFeed() {
 
   const [dismissingTokenId, setDismissingTokenId] = useState<number | null>(
     null,
+  );
+  const [displayedTokens, setDisplayedTokens] = useState<DiscoveredToken[]>(
+    [],
+  );
+  const [watchedTokenIds, setWatchedTokenIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [dismissedTokenIds, setDismissedTokenIds] = useState<Set<number>>(
+    new Set(),
   );
   const [enteringTokenIds, setEnteringTokenIds] = useState<Set<number>>(
     new Set(),
@@ -45,7 +106,7 @@ export default function DiscoveryFeed() {
   const previousTokenCountRef = useRef(0);
 
   const {
-    data: tokens = [],
+    data: fetchedTokens,
     isPending,
     isError,
     error,
@@ -55,10 +116,22 @@ export default function DiscoveryFeed() {
     queryFn: ({ signal }) => fetchDiscoveries(signal),
     refetchInterval: 5000,
   });
+  const tokens = fetchedTokens ?? EMPTY_DISCOVERIES;
+
+  useEffect(() => {
+    setDisplayedTokens((previousTokens) =>
+      mergeDiscoveryWindow(
+        tokens,
+        previousTokens,
+        watchedTokenIds,
+        dismissedTokenIds,
+      ),
+    );
+  }, [dismissedTokenIds, tokens, watchedTokenIds]);
 
   const dismissMutation = useMutation({
     mutationFn: dismissDiscovery,
-    onSuccess: () => {
+    onSuccess: (_data, tokenId) => {
       animateReplacementRef.current = true;
 
       dismissalTimerRef.current = window.setTimeout(() => {
@@ -70,6 +143,21 @@ export default function DiscoveryFeed() {
               slot.getBoundingClientRect().left,
           ]),
         );
+
+        setDismissedTokenIds((currentIds) => {
+          const nextIds = new Set(currentIds);
+          nextIds.add(tokenId);
+          return nextIds;
+        });
+        setWatchedTokenIds((currentIds) => {
+          if (!currentIds.has(tokenId)) {
+            return currentIds;
+          }
+
+          const nextIds = new Set(currentIds);
+          nextIds.delete(tokenId);
+          return nextIds;
+        });
 
         void queryClient.invalidateQueries({
           queryKey: ["discoveries"],
@@ -96,6 +184,20 @@ export default function DiscoveryFeed() {
     setDismissingTokenId(tokenId);
     dismissalWasAtNewestRef.current = isAtNewestRef.current;
     dismissMutation.mutate(tokenId);
+  }
+
+  function handleWatchingChange(tokenId: number, isWatching: boolean) {
+    setWatchedTokenIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      if (isWatching) {
+        nextIds.add(tokenId);
+      } else {
+        nextIds.delete(tokenId);
+      }
+
+      return nextIds;
+    });
   }
 
   function handleFeedScroll() {
@@ -137,11 +239,11 @@ export default function DiscoveryFeed() {
 
   useEffect(() => {
     const previousCount = previousTokenCountRef.current;
-    const hasNewToken = tokens.length > previousCount;
+    const hasNewToken = displayedTokens.length > previousCount;
 
-    if (!hasRestoredScrollRef.current && tokens.length > 0) {
+    if (!hasRestoredScrollRef.current && displayedTokens.length > 0) {
       hasRestoredScrollRef.current = true;
-      previousTokenCountRef.current = tokens.length;
+      previousTokenCountRef.current = displayedTokens.length;
 
       requestAnimationFrame(() => {
         const feed = feedRef.current;
@@ -200,8 +302,8 @@ export default function DiscoveryFeed() {
       });
     }
 
-    previousTokenCountRef.current = tokens.length;
-  }, [tokens.length]);
+    previousTokenCountRef.current = displayedTokens.length;
+  }, [displayedTokens.length]);
 
   useLayoutEffect(() => {
     const startPositions = replacementStartPositionsRef.current;
@@ -276,10 +378,12 @@ export default function DiscoveryFeed() {
         }
       });
     }
-  }, [tokens]);
+  }, [displayedTokens]);
 
   useEffect(() => {
-    const currentTokenIds = new Set(tokens.map((token) => token.id));
+    const currentTokenIds = new Set(
+      displayedTokens.map((token) => token.id),
+    );
     const previousTokenIds = previousTokenIdsRef.current;
 
     if (previousTokenIds && animateReplacementRef.current) {
@@ -317,7 +421,7 @@ export default function DiscoveryFeed() {
       dismissalWasAtNewestRef.current = false;
       setDismissingTokenId(null);
     }
-  }, [dismissingTokenId, tokens]);
+  }, [dismissingTokenId, displayedTokens]);
 
   useEffect(() => {
     return () => {
@@ -386,13 +490,13 @@ export default function DiscoveryFeed() {
         </div>
       )}
 
-      {!isPending && !isError && tokens.length === 0 && (
+      {!isPending && !isError && displayedTokens.length === 0 && (
         <div className="text-body-secondary">
           Waiting for token discoveries...
         </div>
       )}
 
-      {!isPending && !isError && tokens.length > 0 && (
+      {!isPending && !isError && displayedTokens.length > 0 && (
         <>
           <div className="discovery-feed-viewport">
             <div
@@ -400,7 +504,7 @@ export default function DiscoveryFeed() {
               className="discovery-feed-content"
               onScroll={handleFeedScroll}
             >
-              {[...tokens].reverse().map((token) => (
+              {[...displayedTokens].reverse().map((token) => (
                 <div
                   key={token.id}
                   ref={(slot) => {
@@ -415,6 +519,10 @@ export default function DiscoveryFeed() {
                   <TokenCard
                     token={token}
                     onDismiss={() => handleDismiss(token.id)}
+                    onWatchingChange={(isWatching) =>
+                      handleWatchingChange(token.id, isWatching)
+                    }
+                    isWatched={watchedTokenIds.has(token.id)}
                     isDismissing={dismissingTokenId === token.id}
                     isDismissDisabled={
                       isReflowing || enteringTokenIds.size > 0
@@ -426,7 +534,7 @@ export default function DiscoveryFeed() {
             </div>
           </div>
 
-          {tokens.length > 1 && (
+          {displayedTokens.length > 1 && (
             <DiscoveryScrollControl
               scrollContainerRef={feedRef}
             />
