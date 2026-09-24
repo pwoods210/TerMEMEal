@@ -19,7 +19,6 @@ export async function fetchDiscoveries(
   return response.json();
 }
 
-
 export async function dismissDiscovery(
   discoveryId: number,
 ): Promise<void> {

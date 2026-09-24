@@ -1,5 +1,5 @@
 function TradePanel() {
-	
+
   return (
     <section className="trade-panel card shadow-sm">
       <div className="card-body p-4">

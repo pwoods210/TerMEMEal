@@ -1,0 +1,6 @@
+# Normalize text files to LF in Git and in the working tree.
+* text=auto eol=lf
+
+# Preserve CRLF only for native Windows command scripts.
+*.bat text eol=crlf
+*.cmd text eol=crlf

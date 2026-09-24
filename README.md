@@ -1,4 +1,90 @@
+question samples: when a card is dimissed, and there arent new ones (so we less than 50), what do?
+want warning and render buffer - face gate!
 ""
+• Your project already aligns well with several Waymark requirements:
+
+  - React and TypeScript
+  - PostgreSQL
+  - Dockerized local development
+  - API/backend work
+  - background workers and asynchronous events
+  - automated tests and CI
+
+  The biggest opportunity is to make it demonstrate maintainability, reliability, and product thinking—not add more
+  technologies.
+
+  ### 1. Add a messaging-like workflow
+
+  The current discovery feed is event-driven, but it does not feel like a product workflow. Add an “activity inbox” or
+  notification system:
+
+  - Store lifecycle events in PostgreSQL.
+  - Generate notifications when tokens are discovered, promoted, or expire.
+  - Add read/unread state.
+  - Add filtering and pagination.
+  - Expose the workflow through tested API endpoints.
+  - Render it in React.
+
+  This would map naturally to Waymark’s messaging-platform work while staying honest about the project’s domain.
+
+  ### 2. Make worker recovery durable
+
+  Replace the in-memory graduation watch with persisted state or reconstruct it from PostgreSQL on startup.
+
+  That gives you a strong engineering story:
+
+  > “The worker can restart without losing pending lifecycle work.”
+
+  This is more valuable for the job than adding another UI feature.
+
+  ### 3. Strengthen the testing story
+
+  Add and document:
+
+  - backend unit tests for classification and lifecycle rules
+  - PostgreSQL integration tests
+  - frontend component and API tests
+  - one Compose-based smoke test
+  - TypeScript, lint, test, and build checks in CI
+
+  Also update CI to run on development or all pull requests, not only main.
+
+  ### 4. Consider a small Elixir/Phoenix companion
+
+  Waymark explicitly says Elixir experience is not required, so do not rewrite the project just to use Elixir. A better
+  option would be a small bounded experiment:
+
+  - Phoenix endpoint accepting notification events
+  - pattern matching and validation
+  - PostgreSQL persistence
+  - a few ExUnit tests
+  - short README explaining why it is separate
+
+  This demonstrates curiosity and functional-programming interest without making the main project harder to understand.
+
+  ### 5. Add collaboration artifacts
+
+  Create a few realistic GitHub issues and document decisions such as:
+
+  - Why polling instead of WebSockets?
+  - What happens when the listener restarts?
+  - How are duplicate events handled?
+  - How would this scale?
+  - What are the production limitations?
+
+  Include a quick-start guide, architecture diagram, test commands, screenshots, and a short demo video.
+
+  ### Recommended order
+
+  1. Normalize the line endings and make Compose reproducible.
+  2. Fix the frontend dependency-volume workflow.
+  3. Add durable worker recovery.
+  4. Expand tests and CI.
+  5. Add the notification/activity workflow.
+  6. Explore a small Phoenix service only if time remains.
+
+  I would not force healthcare functionality into this project. For Waymark, present it as evidence that you can build
+  reliable, tested, containerized products with React, PostgreSQL, APIs, and asynchronous workflows.
  ### 1. Add real tests
 
   This is the biggest gap relative to “clean, maintainable, and well-tested code.”
@@ -245,12 +331,31 @@ Returns the active discovery feed:
     "name": "Example Token",
     "symbol": "EXAMPLE",
     "tokenAddress": "ExampleSolanaAddress",
+    "pairAddress": "ExamplePairAddress",
     "source": "DexScreener",
+    "exchange": "pumpswap",
     "discoveredAt": "2026-08-31T17:00:00Z",
-    "status": "watching"
+    "status": "watching",
+    "graduatedAt": null,
+    "tokenProfile": {
+      "chainId": "solana",
+      "tokenAddress": "ExampleSolanaAddress",
+      "icon": "https://example.com/icon.png"
+    },
+    "pairs": [
+      {
+        "chainId": "solana",
+        "dexId": "pumpswap",
+        "pairAddress": "ExamplePairAddress",
+        "priceUsd": "1.25",
+        "liquidity": {"usd": 1000}
+      }
+    ]
   }
 ]
 ```
+
+`tokenProfile` preserves the original DexScreener profile event, and `pairs` preserves every pair returned by hydration so the frontend can use the full upstream payload without another DexScreener request.
 
 ### `GET /health/api`
 

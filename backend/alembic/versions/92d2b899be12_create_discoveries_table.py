@@ -1,7 +1,7 @@
 """create discoveries table
 
 Revision ID: 92d2b899be12
-Revises: 
+Revises:
 Create Date: 2026-08-13 18:02:15.350333
 
 """
